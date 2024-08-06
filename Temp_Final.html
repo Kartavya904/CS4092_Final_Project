@@ -139,6 +139,7 @@
             displayCategories();
             displayProducts();
             displayCart();
+            displayPaymentOptions();
             displayStaffSection();
         }
 
@@ -320,11 +321,101 @@
             displayStaffProducts();
         }
 
+        function displayCreditCards() {
+            const creditCards = db.exec(`SELECT * FROM CreditCards WHERE CustomerID = ${currentUser.id}`)[0];
+            const creditCardList = document.getElementById('credit-cards');
+            creditCardList.innerHTML = '';
+            creditCards.values.forEach(card => {
+                const li = document.createElement('li');
+                li.className = 'credit-card';
+                li.innerHTML = `Card Number: **** **** **** ${card[1].slice(-4)} <br> Expiration Date: ${card[2]} <br> CVV: ${card[3]}
+                                <button onclick="editCreditCard(${card[0]})">Edit</button>
+                                <button onclick="deleteCreditCard(${card[0]})">Delete</button>`;
+                creditCardList.appendChild(li);
+            });
+        }
+
+        function editCreditCard(cardId) {
+            const card = db.exec(`SELECT * FROM CreditCards WHERE CreditCardID = ${cardId}`)[0].values[0];
+            document.getElementById('credit-card-id').value = card[0];
+            document.getElementById('card-number').value = card[1];
+            document.getElementById('expiration-date').value = card[2];
+            document.getElementById('cvv').value = card[3];
+            document.getElementById('credit-card-form').style.display = 'block';
+        }
+
+        function deleteCreditCard(cardId) {
+            db.exec(`DELETE FROM CreditCards WHERE CreditCardID = ${cardId}`);
+            displayCreditCards();
+        }
+
+        function saveCreditCard() {
+            const cardId = document.getElementById('credit-card-id').value;
+            const cardNumber = document.getElementById('card-number').value;
+            const expirationDate = document.getElementById('expiration-date').value;
+            const cvv = document.getElementById('cvv').value;
+
+            if (cardId) {
+                db.exec(`UPDATE CreditCards SET CardNumber = '${cardNumber}', ExpirationDate = '${expirationDate}', CVV = '${cvv}' WHERE CreditCardID = ${cardId}`);
+            } else {
+                db.exec(`INSERT INTO CreditCards (CustomerID, CardNumber, ExpirationDate, CVV) VALUES (${currentUser.id}, '${cardNumber}', '${expirationDate}', '${cvv}')`);
+            }
+
+            document.getElementById('credit-card-form').reset();
+            document.getElementById('credit-card-form').style.display = 'none';
+            displayCreditCards();
+        }
+
+        function displayAddresses() {
+            const addresses = db.exec(`SELECT * FROM Addresses WHERE CustomerID = ${currentUser.id}`)[0];
+            const addressList = document.getElementById('addresses');
+            addressList.innerHTML = '';
+            addresses.values.forEach(address => {
+                const li = document.createElement('li');
+                li.className = 'address';
+                li.innerHTML = `Address: ${address[3]} <br> Address Type: ${address[2]}
+                                <button onclick="editAddress(${address[0]})">Edit</button>
+                                <button onclick="deleteAddress(${address[0]})">Delete</button>`;
+                addressList.appendChild(li);
+            });
+        }
+
+        function editAddress(addressId) {
+            const address = db.exec(`SELECT * FROM Addresses WHERE AddressID = ${addressId}`)[0].values[0];
+            document.getElementById('address-id').value = address[0];
+            document.getElementById('address').value = address[3];
+            document.getElementById('address-type').value = address[2];
+            document.getElementById('address-form').style.display = 'block';
+        }
+
+        function deleteAddress(addressId) {
+            db.exec(`DELETE FROM Addresses WHERE AddressID = ${addressId}`);
+            displayAddresses();
+        }
+
+        function saveAddress() {
+            const addressId = document.getElementById('address-id').value;
+            const address = document.getElementById('address').value;
+            const addressType = document.getElementById('address-type').value;
+
+            if (addressId) {
+                db.exec(`UPDATE Addresses SET Address = '${address}', AddressType = '${addressType}' WHERE AddressID = ${addressId}`);
+            } else {
+                db.exec(`INSERT INTO Addresses (CustomerID, Address, AddressType) VALUES (${currentUser.id}, '${address}', '${addressType}')`);
+            }
+
+            document.getElementById('address-form').reset();
+            document.getElementById('address-form').style.display = 'none';
+            displayAddresses();
+        }
+
         window.onload = async () => {
             await initDatabase();
             // Initialize the event listeners
             document.getElementById('search').addEventListener('keyup', searchProducts);
             document.getElementById('save-product').addEventListener('click', saveProduct);
+            document.getElementById('save-credit-card').addEventListener('click', saveCreditCard);
+            document.getElementById('save-address').addEventListener('click', saveAddress);
             document.getElementById('sign-up-btn').addEventListener('click', () => {
                 document.getElementById('login-section').style.display = 'none';
                 document.getElementById('sign-up-section').style.display = 'block';
@@ -400,6 +491,44 @@
                     <select id="address-select"></select>
                 </div>
                 <button onclick="placeOrder()">Place Order</button>
+            </div>
+            <div class="section">
+                <h2>Manage Credit Cards</h2>
+                <ul id="credit-cards"></ul>
+                <button onclick="document.getElementById('credit-card-form').style.display = 'block'">Add New Credit Card</button>
+                <form id="credit-card-form" style="display: none;">
+                    <input type="hidden" id="credit-card-id">
+                    <div class="form-group">
+                        <label for="card-number">Card Number:</label>
+                        <input type="text" id="card-number">
+                    </div>
+                    <div class="form-group">
+                        <label for="expiration-date">Expiration Date:</label>
+                        <input type="date" id="expiration-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV:</label>
+                        <input type="text" id="cvv">
+                    </div>
+                    <button type="button" id="save-credit-card">Save Credit Card</button>
+                </form>
+            </div>
+            <div class="section">
+                <h2>Manage Addresses</h2>
+                <ul id="addresses"></ul>
+                <button onclick="document.getElementById('address-form').style.display = 'block'">Add New Address</button>
+                <form id="address-form" style="display: none;">
+                    <input type="hidden" id="address-id">
+                    <div class="form-group">
+                        <label for="address">Address:</label>
+                        <input type="text" id="address">
+                    </div>
+                    <div class="form-group">
+                        <label for="address-type">Address Type:</label>
+                        <input type="text" id="address-type">
+                    </div>
+                    <button type="button" id="save-address">Save Address</button>
+                </form>
             </div>
             <div id="staff-section" class="section hidden">
                 <h2>Staff Section</h2>
