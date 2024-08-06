@@ -1,0 +1,15 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3000,
+            "driver": "PostgreSQL",
+            "name": "CS4092_Final_Project",
+            "database": "CS4092_Final_Project",
+            "username": "postgres",
+            "password": "Password",
+            "connectionTimeout": 30
+        }
+    ]
+}
