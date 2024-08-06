@@ -42,7 +42,7 @@
 
             const sqlCreateTables = `
                 CREATE TABLE IF NOT EXISTS Categories (CategoryID INT PRIMARY KEY, CategoryName VARCHAR(100) NOT NULL);
-                CREATE TABLE IF NOT EXISTS Products (ProductID INT PRIMARY KEY, ProductName VARCHAR(100) NOT NULL, CategoryID INT, Brand VARCHAR(100), Size VARCHAR(50), Description TEXT, Price DECIMAL(10, 2) NOT NULL);
+                CREATE TABLE IF NOT EXISTS Products (ProductID INT PRIMARY KEY, ProductName VARCHAR(100) NOT NULL, CategoryID INT, Brand VARCHAR(100), Size VARCHAR(50), Description TEXT, Price DECIMAL(10, 2) NOT NULL, Quantity INT DEFAULT 10);
                 CREATE TABLE IF NOT EXISTS Customers (CustomerID INT PRIMARY KEY, CustomerName VARCHAR(100) NOT NULL, Email VARCHAR(100) NOT NULL UNIQUE, Password VARCHAR(100) NOT NULL, Balance DECIMAL(10, 2) DEFAULT 0.00, Role VARCHAR(50) DEFAULT 'Customer');
                 CREATE TABLE IF NOT EXISTS Orders (OrderID INT PRIMARY KEY, CustomerID INT, OrderDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP, Status VARCHAR(50) DEFAULT 'Issued', Total DECIMAL(10, 2) NOT NULL, DeliveryPlanID INT);
                 CREATE TABLE IF NOT EXISTS OrderItems (OrderItemID INT PRIMARY KEY, OrderID INT, ProductID INT, Quantity INT NOT NULL, Price DECIMAL(10, 2) NOT NULL);
@@ -54,15 +54,15 @@
                 CREATE TABLE IF NOT EXISTS CreditCards (CreditCardID INT PRIMARY KEY, CustomerID INT, CardNumber VARCHAR(16) NOT NULL, ExpirationDate DATE NOT NULL, CVV VARCHAR(3) NOT NULL, BillingAddressID INT);
 
                 INSERT INTO Categories (CategoryID, CategoryName) VALUES (1, 'Apparel'), (2, 'Electronics'), (3, 'Home Goods'), (4, 'Books');
-                INSERT INTO Products (ProductID, ProductName, CategoryID, Brand, Size, Description, Price) VALUES
-                (1, 'T-Shirt', 1, 'BrandA', 'L', 'A comfortable cotton t-shirt', 19.99),
-                (2, 'Jeans', 1, 'BrandB', '32', 'Stylish blue jeans', 49.99),
-                (3, 'Laptop', 2, 'BrandC', '15-inch', 'High performance laptop', 899.99),
-                (4, 'Smartphone', 2, 'BrandD', '6-inch', 'Latest model smartphone', 699.99),
-                (5, 'Sofa', 3, 'BrandE', '3-seater', 'Comfortable living room sofa', 299.99),
-                (6, 'Dining Table', 3, 'BrandF', '6-seater', 'Elegant dining table', 199.99),
-                (7, 'Novel', 4, 'AuthorA', 'N/A', 'Best-selling novel', 14.99),
-                (8, 'Cookbook', 4, 'AuthorB', 'N/A', 'Delicious recipes', 24.99);
+                INSERT INTO Products (ProductID, ProductName, CategoryID, Brand, Size, Description, Price, Quantity) VALUES
+                (1, 'T-Shirt', 1, 'BrandA', 'L', 'A comfortable cotton t-shirt', 19.99, 10),
+                (2, 'Jeans', 1, 'BrandB', '32', 'Stylish blue jeans', 49.99, 10),
+                (3, 'Laptop', 2, 'BrandC', '15-inch', 'High performance laptop', 899.99, 10),
+                (4, 'Smartphone', 2, 'BrandD', '6-inch', 'Latest model smartphone', 699.99, 10),
+                (5, 'Sofa', 3, 'BrandE', '3-seater', 'Comfortable living room sofa', 299.99, 10),
+                (6, 'Dining Table', 3, 'BrandF', '6-seater', 'Elegant dining table', 199.99, 10),
+                (7, 'Novel', 4, 'AuthorA', 'N/A', 'Best-selling novel', 14.99, 10),
+                (8, 'Cookbook', 4, 'AuthorB', 'N/A', 'Delicious recipes', 24.99, 10);
                 INSERT INTO Customers (CustomerID, CustomerName, Email, Password, Balance, Role) VALUES
                 (1, 'Alice', 'alice@example.com', 'hashed_password1', 0.00, 'Customer'),
                 (2, 'Bob', 'bob@example.com', 'hashed_password2', 0.00, 'Admin');
@@ -84,17 +84,6 @@
                 (2, 1, 2, 50),
                 (3, 2, 3, 30),
                 (4, 2, 4, 20);
-                INSERT INTO Staff (StaffID, StaffName, Address, Salary, JobTitle) VALUES
-                (1, 'John Doe', '789 Oak St, Anytown, USA', 50000.00, 'Manager'),
-                (2, 'Jane Smith', '101 Pine St, Othertown, USA', 40000.00, 'Sales Associate');
-                INSERT INTO Addresses (AddressID, CustomerID, AddressType, Address) VALUES
-                (1, 1, 'Shipping', '123 Maple St, Anytown, USA'),
-                (2, 1, 'Billing', '123 Maple St, Anytown, USA'),
-                (3, 2, 'Shipping', '456 Birch St, Othertown, USA'),
-                (4, 2, 'Billing', '456 Birch St, Othertown, USA');
-                INSERT INTO CreditCards (CreditCardID, CustomerID, CardNumber, ExpirationDate, CVV, BillingAddressID) VALUES
-                (1, 1, '1111222233334444', '2025-12-31', '123', 2),
-                (2, 2, '5555666677778888', '2026-06-30', '456', 4);
             `;
 
             db.exec(sqlCreateTables);
@@ -128,6 +117,24 @@
             document.getElementById('sign-out').style.display = 'none';
         }
 
+        async function signUp() {
+            const email = document.getElementById('sign-up-email').value;
+            const password = document.getElementById('sign-up-password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            console.log("Email: " + email, "password: " + password, "role: " + role);
+
+            const existingUser = db.exec(`SELECT * FROM Customers WHERE Email = '${email}'`);
+            if (existingUser.length > 0) {
+                alert('Email already exists.');
+                return;
+            }
+
+            db.exec(`INSERT INTO Customers (CustomerName, Email, Password, Role) VALUES ('New User', '${email}', '${password}', '${role}')`);
+            alert('Sign up successful! Please log in.');
+            document.getElementById('sign-up-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        }
+
         function displayData() {
             displayCategories();
             displayProducts();
@@ -153,7 +160,7 @@
             products.values.forEach(product => {
                 const li = document.createElement('li');
                 li.className = 'product';
-                li.innerHTML = `<strong>${product[1]}</strong> - ${product[6]} USD <br> ${product[4]} <br> ${product[5]}`;
+                li.innerHTML = `<strong>${product[1]}</strong> - ${product[6]} USD (${product[7]} in stock) <br> ${product[4]} <br> ${product[5]}`;
                 li.onclick = () => addToCart(product);
                 productsList.appendChild(li);
             });
@@ -161,15 +168,17 @@
 
         function searchProducts() {
             const query = document.getElementById('search').value.toLowerCase();
-            const results = db.exec(`SELECT * FROM Products WHERE LOWER(ProductName) LIKE '%${query}%'`)[0];
+            const results = db.exec(`SELECT * FROM Products WHERE LOWER(ProductName) LIKE '%${query}%'`);
             const searchResults = document.getElementById('searchResults');
             searchResults.innerHTML = '';
-            results.values.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product[1]} - ${product[6]} USD`;
-                li.onclick = () => addToCart(product);
-                searchResults.appendChild(li);
-            });
+            if (results.length > 0) {
+                results[0].values.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product[1]} - ${product[6]} USD`;
+                    li.onclick = () => addToCart(product);
+                    searchResults.appendChild(li);
+                });
+            }
         }
 
         function addToCart(product) {
@@ -191,11 +200,40 @@
                 li.innerHTML = `${product[1]} - ${product[6]} USD (Quantity: ${product[4]}) <button onclick="removeFromCart(${product[0]})">Remove</button>`;
                 cartList.appendChild(li);
             });
+
+            displayPaymentOptions();
         }
 
         function removeFromCart(productId) {
             cart = cart.filter(product => product[0] !== productId);
             displayCart();
+        }
+
+        function displayPaymentOptions() {
+            const creditCards = db.exec(`SELECT * FROM CreditCards WHERE CustomerID = ${currentUser.id}`);
+            const addresses = db.exec(`SELECT * FROM Addresses WHERE CustomerID = ${currentUser.id}`);
+
+            const cardSelect = document.getElementById('credit-card-select');
+            cardSelect.innerHTML = '';
+            if (creditCards.length > 0) {
+                creditCards[0].values.forEach(card => {
+                    const option = document.createElement('option');
+                    option.value = card[0];
+                    option.textContent = `Card ending in ${card[1].slice(-4)}`;
+                    cardSelect.appendChild(option);
+                });
+            }
+
+            const addressSelect = document.getElementById('address-select');
+            addressSelect.innerHTML = '';
+            if (addresses.length > 0) {
+                addresses[0].values.forEach(address => {
+                    const option = document.createElement('option');
+                    option.value = address[0];
+                    option.textContent = address[3];
+                    addressSelect.appendChild(option);
+                });
+            }
         }
 
         function placeOrder() {
@@ -205,12 +243,13 @@
             }
 
             const total = cart.reduce((sum, product) => sum + (product[6] * product[4]), 0);
-            db.exec(`INSERT INTO Orders (CustomerID, Total) VALUES (${currentUser.id}, ${total})`);
+            const deliveryPlanID = 1; // Default to 'Standard' delivery plan ID
+            db.exec(`INSERT INTO Orders (CustomerID, Total, DeliveryPlanID) VALUES (${currentUser.id}, ${total}, ${deliveryPlanID})`);
             const orderId = db.exec('SELECT last_insert_rowid()')[0].values[0][0];
 
             cart.forEach(product => {
                 db.exec(`INSERT INTO OrderItems (OrderID, ProductID, Quantity, Price) VALUES (${orderId}, ${product[0]}, ${product[4]}, ${product[6]})`);
-                db.exec(`UPDATE Stock SET Quantity = Quantity - ${product[4]} WHERE ProductID = ${product[0]}`);
+                db.exec(`UPDATE Products SET Quantity = Quantity - ${product[4]} WHERE ProductID = ${product[0]}`);
             });
 
             cart = [];
@@ -223,7 +262,7 @@
                 document.getElementById('staff-section').style.display = 'none';
                 return;
             }
-            document.getElementById('staff-section').style.display = 'block';
+
             document.getElementById('staff-section').style.display = 'block';
             displayStaffProducts();
         }
@@ -235,7 +274,7 @@
             products.values.forEach(product => {
                 const li = document.createElement('li');
                 li.className = 'staff-item';
-                li.innerHTML = `<strong>${product[1]}</strong> - ${product[6]} USD <br> ${product[4]} <br> ${product[5]}
+                li.innerHTML = `<strong>${product[1]}</strong> - ${product[6]} USD (${product[7]} in stock) <br> ${product[4]} <br> ${product[5]}
                                 <button onclick="editProduct(${product[0]})">Edit</button>
                                 <button onclick="deleteProduct(${product[0]})">Delete</button>`;
                 productsList.appendChild(li);
@@ -251,6 +290,7 @@
             document.getElementById('product-size').value = product[4];
             document.getElementById('product-description').value = product[5];
             document.getElementById('product-price').value = product[6];
+            document.getElementById('product-quantity').value = product[7];
             document.getElementById('product-form').style.display = 'block';
         }
 
@@ -267,11 +307,12 @@
             const productSize = document.getElementById('product-size').value;
             const productDescription = document.getElementById('product-description').value;
             const productPrice = document.getElementById('product-price').value;
+            const productQuantity = document.getElementById('product-quantity').value;
 
             if (productId) {
-                db.exec(`UPDATE Products SET ProductName = '${productName}', CategoryID = ${productCategory}, Brand = '${productBrand}', Size = '${productSize}', Description = '${productDescription}', Price = ${productPrice} WHERE ProductID = ${productId}`);
+                db.exec(`UPDATE Products SET ProductName = '${productName}', CategoryID = ${productCategory}, Brand = '${productBrand}', Size = '${productSize}', Description = '${productDescription}', Price = ${productPrice}, Quantity = ${productQuantity} WHERE ProductID = ${productId}`);
             } else {
-                db.exec(`INSERT INTO Products (ProductName, CategoryID, Brand, Size, Description, Price) VALUES ('${productName}', ${productCategory}, '${productBrand}', '${productSize}', '${productDescription}', ${productPrice})`);
+                db.exec(`INSERT INTO Products (ProductName, CategoryID, Brand, Size, Description, Price, Quantity) VALUES ('${productName}', ${productCategory}, '${productBrand}', '${productSize}', '${productDescription}', ${productPrice}, ${productQuantity})`);
             }
 
             document.getElementById('product-form').reset();
@@ -284,6 +325,15 @@
             // Initialize the event listeners
             document.getElementById('search').addEventListener('keyup', searchProducts);
             document.getElementById('save-product').addEventListener('click', saveProduct);
+            document.getElementById('sign-up-btn').addEventListener('click', () => {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('sign-up-section').style.display = 'block';
+            });
+            document.getElementById('sign-up').addEventListener('click', signUp);
+            document.getElementById('sign-up-login-btn').addEventListener('click', () => {
+                document.getElementById('sign-up-section').style.display = 'none';
+                document.getElementById('login-section').style.display = 'block';
+            });
         };
     </script>
 </head>
@@ -300,6 +350,26 @@
                 <input type="password" id="password">
             </div>
             <button onclick="login()">Login</button>
+            <button id="sign-up-btn">Sign Up</button>
+        </div>
+
+        <div id="sign-up-section" class="section hidden">
+            <h2>Sign Up</h2>
+            <div class="form-group">
+                <label for="sign-up-email">Email:</label>
+                <input type="email" id="sign-up-email">
+            </div>
+            <div class="form-group">
+                <label for="sign-up-password">Password:</label>
+                <input type="password" id="sign-up-password">
+            </div>
+            <div class="form-group">
+                <label for="role">Role:</label>
+                <input type="radio" name="role" value="Customer" checked> Customer
+                <input type="radio" name="role" value="Admin"> Admin
+            </div>
+            <button id="sign-up">Sign Up</button>
+            <button id="sign-up-login-btn">Login</button>
         </div>
 
         <button id="sign-out" onclick="signOut()" class="hidden">Sign Out</button>
@@ -321,6 +391,14 @@
             <div class="section">
                 <h2>Shopping Cart</h2>
                 <ul id="cart"></ul>
+                <div>
+                    <label for="credit-card-select">Select Credit Card:</label>
+                    <select id="credit-card-select"></select>
+                </div>
+                <div>
+                    <label for="address-select">Select Address:</label>
+                    <select id="address-select"></select>
+                </div>
                 <button onclick="placeOrder()">Place Order</button>
             </div>
             <div id="staff-section" class="section hidden">
@@ -352,6 +430,10 @@
                     <div class="form-group">
                         <label for="product-price">Price:</label>
                         <input type="number" step="0.01" id="product-price">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-quantity">Quantity:</label>
+                        <input type="number" id="product-quantity">
                     </div>
                     <button type="button" id="save-product">Save Product</button>
                 </form>

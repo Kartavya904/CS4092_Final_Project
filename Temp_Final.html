@@ -49,6 +49,7 @@
                 CREATE TABLE IF NOT EXISTS DeliveryPlans (DeliveryPlanID INT PRIMARY KEY, OrderID INT, DeliveryType VARCHAR(50) NOT NULL, DeliveryPrice DECIMAL(10, 2) NOT NULL, DeliveryDate DATE NOT NULL, ShipDate DATE NOT NULL);
                 CREATE TABLE IF NOT EXISTS Warehouses (WarehouseID INT PRIMARY KEY, Address VARCHAR(255) NOT NULL);
                 CREATE TABLE IF NOT EXISTS Stock (StockID INT PRIMARY KEY, WarehouseID INT, ProductID INT, Quantity INT NOT NULL);
+                CREATE TABLE IF NOT EXISTS Staff (StaffID INT PRIMARY KEY, StaffName VARCHAR(100) NOT NULL, Address VARCHAR(255) NOT NULL, Salary DECIMAL(10, 2) NOT NULL, JobTitle VARCHAR(100) NOT NULL);
                 CREATE TABLE IF NOT EXISTS Addresses (AddressID INT PRIMARY KEY, CustomerID INT, AddressType VARCHAR(50) NOT NULL, Address VARCHAR(255) NOT NULL);
                 CREATE TABLE IF NOT EXISTS CreditCards (CreditCardID INT PRIMARY KEY, CustomerID INT, CardNumber VARCHAR(16) NOT NULL, ExpirationDate DATE NOT NULL, CVV VARCHAR(3) NOT NULL, BillingAddressID INT);
 
@@ -167,15 +168,17 @@
 
         function searchProducts() {
             const query = document.getElementById('search').value.toLowerCase();
-            const results = db.exec(`SELECT * FROM Products WHERE LOWER(ProductName) LIKE '%${query}%'`)[0];
+            const results = db.exec(`SELECT * FROM Products WHERE LOWER(ProductName) LIKE '%${query}%'`);
             const searchResults = document.getElementById('searchResults');
             searchResults.innerHTML = '';
-            results.values.forEach(product => {
-                const li = document.createElement('li');
-                li.textContent = `${product[1]} - ${product[6]} USD`;
-                li.onclick = () => addToCart(product);
-                searchResults.appendChild(li);
-            });
+            if (results.length > 0) {
+                results[0].values.forEach(product => {
+                    const li = document.createElement('li');
+                    li.textContent = `${product[1]} - ${product[6]} USD`;
+                    li.onclick = () => addToCart(product);
+                    searchResults.appendChild(li);
+                });
+            }
         }
 
         function addToCart(product) {
@@ -207,26 +210,30 @@
         }
 
         function displayPaymentOptions() {
-            const creditCards = db.exec(`SELECT * FROM CreditCards WHERE CustomerID = ${currentUser.id}`)[0];
-            const addresses = db.exec(`SELECT * FROM Addresses WHERE CustomerID = ${currentUser.id}`)[0];
+            const creditCards = db.exec(`SELECT * FROM CreditCards WHERE CustomerID = ${currentUser.id}`);
+            const addresses = db.exec(`SELECT * FROM Addresses WHERE CustomerID = ${currentUser.id}`);
 
             const cardSelect = document.getElementById('credit-card-select');
             cardSelect.innerHTML = '';
-            creditCards.values.forEach(card => {
-                const option = document.createElement('option');
-                option.value = card[0];
-                option.textContent = `Card ending in ${card[1].slice(-4)}`;
-                cardSelect.appendChild(option);
-            });
+            if (creditCards.length > 0) {
+                creditCards[0].values.forEach(card => {
+                    const option = document.createElement('option');
+                    option.value = card[0];
+                    option.textContent = `Card ending in ${card[1].slice(-4)}`;
+                    cardSelect.appendChild(option);
+                });
+            }
 
             const addressSelect = document.getElementById('address-select');
             addressSelect.innerHTML = '';
-            addresses.values.forEach(address => {
-                const option = document.createElement('option');
-                option.value = address[0];
-                option.textContent = address[3];
-                addressSelect.appendChild(option);
-            });
+            if (addresses.length > 0) {
+                addresses[0].values.forEach(address => {
+                    const option = document.createElement('option');
+                    option.value = address[0];
+                    option.textContent = address[3];
+                    addressSelect.appendChild(option);
+                });
+            }
         }
 
         function placeOrder() {
@@ -315,6 +322,7 @@
 
         window.onload = async () => {
             await initDatabase();
+            // Initialize the event listeners
             document.getElementById('search').addEventListener('keyup', searchProducts);
             document.getElementById('save-product').addEventListener('click', saveProduct);
             document.getElementById('sign-up-btn').addEventListener('click', () => {
